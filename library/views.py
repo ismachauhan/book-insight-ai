@@ -3,8 +3,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BookData
 from .serializers import BookDataSerializer
-from .rag_utils import find_most_similar
-
+from .rag_utils import find_top_books
 
 
 @api_view(['GET'])
@@ -45,18 +44,20 @@ def ask_question(request):
         return Response({"error": "Question is required"}, status=400)
 
     books = BookData.objects.all()
-    best_book = find_most_similar(query, books)
+    top_books = find_top_books(query, books)
 
-    if best_book:
-        answer = (
-    f"Based on your question, this book is relevant. "
-    f"Title: {best_book.title}. "
-    f"Summary: {best_book.ai_summary}. "
-    f"This book matches your query due to semantic similarity."
-)
+    if not top_books:
+        return Response({"error": "No relevant books found"})
 
+    results = []
 
-    else:
-        answer = "No relevant book found."
+    for book in top_books:
+        results.append({
+            "title": book.title,
+            "summary": book.ai_summary,
+            "reason": "Semantically similar to your query"
+        })
 
-    return Response({"answer": answer})
+    return Response({
+        "results": results
+    })
