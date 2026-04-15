@@ -13,13 +13,13 @@ def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / (
         np.linalg.norm(vec1) * np.linalg.norm(vec2)
     )
+  
 
 
-def find_most_similar(query, books):
+def find_top_books(query, books, top_k=3):
     query_embedding = get_embedding(query)
 
-    best_score = -1
-    best_book = None
+    scores = []
 
     for book in books:
         text = f"{book.title} {book.description}"
@@ -27,8 +27,11 @@ def find_most_similar(query, books):
 
         score = cosine_similarity(query_embedding, book_embedding)
 
-        if score > best_score:
-            best_score = score
-            best_book = book
+        scores.append((score, book))
 
-    return best_book
+   
+    scores.sort(key=lambda x: x[0], reverse=True)
+
+    top_books = [book for _, book in scores[:top_k]]
+
+    return top_books
