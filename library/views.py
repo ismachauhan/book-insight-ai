@@ -48,14 +48,14 @@ def ask_question(request):
     best_book = find_most_similar(query, books)
 
     if best_book:
-        answer = f"""
-Based on your question, this book is relevant:
+        answer = (
+    f"Based on your question, this book is relevant. "
+    f"Title: {best_book.title}. "
+    f"Summary: {best_book.ai_summary}. "
+    f"This book matches your query due to semantic similarity."
+)
 
-📖 Title: {best_book.title}
-🧠 Summary: {best_book.ai_summary}
 
-This book matches your query because it is semantically similar to your question.
-"""
     else:
         answer = "No relevant book found."
 
