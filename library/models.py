@@ -16,5 +16,7 @@ class BookData(models.Model):
    
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    recommendation = models.TextField(null=True, blank=True)
+
     def __str__(self):
         return self.title
