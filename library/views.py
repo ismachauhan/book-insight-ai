@@ -61,3 +61,22 @@ def ask_question(request):
     return Response({
         "results": results
     })
+
+def home(request):
+    results = None
+
+    if request.method == "POST":
+        query = request.POST.get("question")
+
+        books = BookData.objects.all()
+        top_books = find_top_books(query, books)
+
+        results = [
+            {
+                "title": book.title,
+                "summary": book.ai_summary
+            }
+            for book in top_books
+        ]
+
+    return render(request, "library/index.html", {"results": results})
