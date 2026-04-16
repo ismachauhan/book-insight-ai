@@ -17,10 +17,13 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from library.views import home
+from library.views import dashboard, ask_page, book_detail
 
 urlpatterns = [
-    path('', home),  
+    path('', dashboard),
+    path('ask/', ask_page),
+    path('book/<int:pk>/', book_detail),
+
     path('admin/', admin.site.urls),
     path('api/', include('library.urls')),
 ]

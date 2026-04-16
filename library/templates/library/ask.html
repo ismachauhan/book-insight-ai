@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ask Questions</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to right, #eef2f3, #dfe9f3);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 60px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 36px;
+        }
+
+        form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input {
+            padding: 12px;
+            width: 70%;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+
+        .hint {
+            color: #777;
+            margin-bottom: 15px;
+        }
+
+        .answer-box {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: left;
+            margin-top: 15px;
+        }
+
+        .card {
+            background: #fafafa;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            text-align: left;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #2c3e50;
+            text-decoration: none;
+        }
+
+        .title:hover {
+            text-decoration: underline;
+            color: #4CAF50;
+        }
+
+        .section-title {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 20px;
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>📚 Ask Book Questions</h1>
+
+        <p class="hint">Try: <i>"science fiction books"</i></p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <input type="text" name="question" placeholder="Ask about books..." required>
+            <button type="submit">Search</button>
+        </form>
+
+        {% if answer %}
+            <div class="section-title">Answer</div>
+
+            <div class="answer-box">
+                {{ answer }}
+            </div>
+
+            <div class="section-title">Sources</div>
+
+            {% for book in sources %}
+                <div class="card">
+                    <a href="/book/{{ book.id }}/" class="title">
+                        {{ book.title }}
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="hint">Enter a query to get AI-powered recommendations</p>
+        {% endif %}
+
+        <a href="/" class="back-link">← Back to Dashboard</a>
+
+    </div>
+
+</body>
+</html>
