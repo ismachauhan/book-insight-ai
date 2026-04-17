@@ -6,5 +6,4 @@ urlpatterns = [
     path('books/<int:pk>/', get_book_detail),
     path('books/add/', add_book),
     path('ask/', ask_question),
-    
 ]

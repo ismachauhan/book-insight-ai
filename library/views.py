@@ -103,50 +103,134 @@ def ask_page(request):
     answer = None
     sources = None
 
+    # ✅ get existing history
+    history = request.session.get("history", [])
+
     if request.method == "POST":
-        query = request.POST.get("question")
+        query = request.POST.get("question", "").strip()
 
-        books = BookData.objects.all()
-        top_books = find_top_books(query, books)
+        # ✅ handle empty input
+        if not query:
+            answer = "Hmm… try typing something first 😄"
+            sources = []
+        else:
+            books = BookData.objects.all()
+            top_books = find_top_books(query, books)
 
-        if top_books:
-            # ✅ REMOVE DUPLICATES
-            unique_books = []
-            seen = set()
+            if top_books:
+                unique_books = []
+                seen = set()
 
-            for book in top_books:
-                if book.title not in seen:
-                    unique_books.append(book)
-                    seen.add(book.title)
+                for book in top_books:
+                    if book.title not in seen:
+                        unique_books.append(book)
+                        seen.add(book.title)
 
-            top_books = unique_books
+                top_books = unique_books
 
-            # ✅ REMOVE SAME BOOK
-            query_lower = query.lower()
+                query_lower = query.lower()
 
-            top_books = [
-                book for book in top_books
-                if book.title.lower() not in query_lower
-            ]
+                top_books = [
+                    book for book in top_books
+                    if book.title.lower() not in query_lower
+                ]
 
-            # ✅ LIMIT RESULTS
-            top_books = top_books[:3]
+                # ✅ LIMIT
+                top_books = top_books[:3]
 
-            # ✅ BUILD CONTEXT
-            context = ""
-            for book in top_books:
-                context += f"""
+                # ❗ check after filtering
+                if not top_books:
+                    answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
+                    sources = []
+                else:
+                    # ✅ simple context
+                    context = ""
+                    for book in top_books:
+                        context += f"""
 Title: {book.title}
 Summary: {book.ai_summary}
-Description: {book.description}
 """
 
-            # 🔥 LLM ANSWER
-            answer = generate_answer(query, context)
+                    answer = generate_answer(query, context)
+                    sources = top_books
 
-            sources = top_books
+            else:
+                answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
+                sources = []
+
+        # 🔥 SAVE TO HISTORY
+        history.append({
+            "question": query,
+            "answer": answer
+        })
+
+        request.session["history"] = history
+
+    return render(request, "library/ask.html", {
+        "answer": answer,
+        "sources": sources,
+        "history": history
+    })
+    answer = None
+    sources = None
+
+    if request.method == "POST":
+        query = request.POST.get("question", "").strip()
+
+        # ✅ handle empty input
+        if not query:
+            answer = "Hmm… try typing something first 😄"
+            sources = []
+        else:
+            books = BookData.objects.all()
+            top_books = find_top_books(query, books)
+
+            if top_books:
+                unique_books = []
+                seen = set()
+
+                for book in top_books:
+                    if book.title not in seen:
+                        unique_books.append(book)
+                        seen.add(book.title)
+
+                top_books = unique_books
+
+                query_lower = query.lower()
+
+                top_books = [
+                    book for book in top_books
+                    if book.title.lower() not in query_lower
+                ]
+
+                # ✅ LIMIT
+                top_books = top_books[:3]
+
+                # ❗ check after filtering
+                if not top_books:
+                    answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
+                    sources = []
+                else:
+                    # ✅ simple context (fast)
+                    context = ""
+                    for book in top_books:
+                        context += f"""
+Title: {book.title}
+Summary: {book.ai_summary}
+"""
+
+                    answer = generate_answer(query, context)
+                    sources = top_books
+
+            else:
+                answer = "Looks like that book slipped off our shelf 😄 Try another search?"
+                sources = []
 
     return render(request, "library/ask.html", {
         "answer": answer,
         "sources": sources
     })
+
+def history_page(request):
+    history = request.session.get("history", [])
+    return render(request, "library/history.html", {"history": history})

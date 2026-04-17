@@ -56,19 +56,18 @@ Rules:
     return call_llm(prompt)
 
 
-# 🔥 MAIN QA FUNCTION (RAG)
+
 def generate_answer(query, context):
     prompt = f"""
 You are an intelligent AI book assistant.
 
-Your job is to answer based ONLY on the context.
-
 Instructions:
-- If user asks for summary → give summary
-- If user asks for recommendation → suggest DIFFERENT books
-- NEVER repeat the same book
-- NEVER say "based on system analysis"
-- Give natural human-like answer
+- Answer clearly and naturally like a human
+- If the user asks for a summary → give a concise 2-3 line summary
+- If the user asks for recommendations → suggest 2-3 DIFFERENT books
+- Give a short reason for each recommendation
+- Do NOT repeat the same book
+- Do NOT say "based on system analysis"
 
 Context:
 {context}
@@ -81,7 +80,7 @@ Answer:
     return call_llm(prompt)
 
 
-# 🔥 GENRE CLASSIFICATION
+
 def classify_genre(title, description):
     prompt = f"""
 Identify the genre of this book.
