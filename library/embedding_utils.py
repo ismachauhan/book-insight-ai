@@ -1,29 +1,38 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
+import faiss
+
+
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-
-def get_embedding(text):
-    return model.encode(text)
-
-
-def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+index = None
+book_list = []
 
 
-def find_top_books_semantic(query, books, top_k=3):
-    query_emb = get_embedding(query)
+def build_faiss_index(books):
+    global index, book_list
 
-    scored = []
+    book_list = list(books)
 
-    for book in books:
+    embeddings = []
+    for book in book_list:
         text = f"{book.title} {book.description}"
-        book_emb = get_embedding(text)
+        emb = model.encode(text)
+        embeddings.append(emb)
 
-        score = cosine_similarity(query_emb, book_emb)
-        scored.append((score, book))
+    embeddings = np.array(embeddings).astype("float32")
 
-    scored.sort(reverse=True, key=lambda x: x[0])
+    dim = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dim)
+    index.add(embeddings)
 
-    return [book for _, book in scored[:top_k]]
+
+def search_books(query, top_k=3):
+    global index, book_list
+
+    query_emb = model.encode([query]).astype("float32")
+
+    distances, indices = index.search(query_emb, top_k)
+
+    return [book_list[i] for i in indices[0]]

@@ -3,11 +3,11 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BookData
 from .serializers import BookDataSerializer
-from .embedding_utils import find_top_books_semantic  # ✅ NEW
+from .embedding_utils import find_top_books_semantic, build_faiss_index, search_books
 from .ai_utils import generate_answer
+ 
 
 
-# ===================== API VIEWS =====================
 
 @api_view(['GET'])
 def fetch_all_books(request):
@@ -47,13 +47,14 @@ def ask_question(request):
 
     books = BookData.objects.all()
 
-    # 🔥 STEP 2: semantic search
-    top_books = find_top_books_semantic(query, books)
+    
+    build_faiss_index(books)
+    top_books = search_books(query)
 
     if not top_books:
         return Response({"error": "No relevant books found"})
 
-    # ✅ REMOVE DUPLICATES
+    
     unique_books = []
     seen = set()
 
@@ -64,14 +65,14 @@ def ask_question(request):
 
     top_books = unique_books
 
-    # ✅ FILTER SELF MATCH
+   
     query_lower = query.lower()
     top_books = [
         book for book in top_books
         if book.title.lower() not in query_lower
     ]
 
-    # ✅ BUILD CONTEXT
+  
     context = ""
     for book in top_books:
         context += f"""
@@ -80,10 +81,10 @@ Summary: {book.ai_summary}
 Description: {book.description}
 """
 
-    # 🔥 LLM ANSWER
+    
     answer = generate_answer(query, context)
 
-    # ✅ FORCE SOURCES (IMPORTANT)
+    
     answer += "\n\nSources: " + ", ".join([book.title for book in top_books])
 
     sources = [book.title for book in top_books]
@@ -94,7 +95,7 @@ Description: {book.description}
     })
 
 
-# ===================== UI VIEWS =====================
+
 
 def dashboard(request):
     books = BookData.objects.all().order_by('-uploaded_at')
@@ -121,7 +122,7 @@ def ask_page(request):
         else:
             books = BookData.objects.all()
 
-            # 🔥 STEP 2 HERE ALSO
+            
             top_books = find_top_books_semantic(query, books)
 
             if top_books:
@@ -163,7 +164,6 @@ Summary: {book.ai_summary}
                 answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
                 sources = []
 
-        # 🔥 SAVE HISTORY
         history.append({
             "question": query,
             "answer": answer

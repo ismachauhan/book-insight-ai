@@ -7,7 +7,7 @@ urlpatterns = [
     path('ask/', ask_page),
     path('book/<int:pk>/', book_detail),
 
-    path('history/', history_page),  # ✅ UI route
+    path('history/', history_page), 
 
     path('admin/', admin.site.urls),
     path('api/', include('library.urls')),  # API routes

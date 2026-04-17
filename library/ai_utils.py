@@ -20,7 +20,7 @@ def call_llm(prompt):
         return f"LLM Error: {str(e)}"
 
 
-# 🔥 SUMMARY
+
 def generate_summary(description):
     if not description:
         return "No description available"
@@ -37,7 +37,7 @@ Description:
     return call_llm(prompt)
 
 
-# 🔥 RECOMMENDATION
+
 def recommend_book(title, description):
     prompt = f"""
 A user likes this book:
