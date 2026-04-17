@@ -37,6 +37,7 @@ def add_book(request):
 
 
 @api_view(['POST'])
+@api_view(['POST'])
 def ask_question(request):
     query = request.data.get("question")
 
@@ -51,40 +52,26 @@ def ask_question(request):
     if not top_books:
         return Response({"error": "No relevant books found"})
 
-    unique_books = []
-    seen = set()
-
-    for book in top_books:
-        if book.title not in seen:
-            unique_books.append(book)
-            seen.add(book.title)
-
-    top_books = unique_books
-
-    query_lower = query.lower()
-    top_books = [
-        book for book in top_books
-        if book.title.lower() not in query_lower
-    ]
+    top_books = list({book.title: book for book in top_books}.values())
 
     context = ""
     for book in top_books:
         context += f"""
-Book:
 Title: {book.title}
-Genre: {book.genre}
 Summary: {book.ai_summary}
-Description: {book.description}
 """
 
     answer = generate_answer(query, context)
-    answer += "\n\nSources: " + ", ".join([book.title for book in top_books])
 
-    sources = [book.title for book in top_books]
+    if "LLM Error" in answer:
+        return Response({
+            "answer": "Oops… AI is taking a nap 😴 Try again!",
+            "sources": []
+        })
 
     return Response({
         "answer": answer,
-        "sources": sources
+        "sources": [book.title for book in top_books]
     })
 
 
@@ -101,7 +88,6 @@ def book_detail(request, pk):
 def ask_page(request):
     answer = None
     sources = None
-
     history = request.session.get("history", [])
 
     if request.method == "POST":
@@ -117,61 +103,35 @@ def ask_page(request):
             top_books = search_books(query)
 
             if top_books:
-                unique_books = []
-                seen = set()
-
-                for book in top_books:
-                    if book.title not in seen:
-                        unique_books.append(book)
-                        seen.add(book.title)
-
-                top_books = unique_books
-
-                query_lower = query.lower()
-
-                top_books = [
-                    book for book in top_books
-                    if book.title.lower() not in query_lower
-                ]
-
+                top_books = list({book.title: book for book in top_books}.values())
                 top_books = top_books[:3]
 
-                if not top_books:
-                    answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
-                    sources = []
-                else:
-                    context = ""
-                    for book in top_books:
-                        context += f"""
-Book:
+                context = ""
+                for book in top_books:
+                    context += f"""
 Title: {book.title}
-Genre: {book.genre}
 Summary: {book.ai_summary}
-Description: {book.description}
 """
 
-                    answer = generate_answer(query, context)
-                    answer += "\n\nSources: " + ", ".join([book.title for book in top_books])
+                answer = generate_answer(query, context)
 
+                if "LLM Error" in answer:
+                    answer = "Oops… AI is taking a nap 😴 Try again!"
+                    sources = []
+                else:
                     sources = top_books
-
             else:
                 answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
                 sources = []
 
-        history.append({
-            "question": query,
-            "answer": answer
-        })
-
-        request.session["history"] = history
+        history.append({"question": query, "answer": answer})
+        request.session["history"] = history[-10:]
 
     return render(request, "library/ask.html", {
         "answer": answer,
         "sources": sources,
         "history": history
     })
-
 
 def history_page(request):
     history = request.session.get("history", [])

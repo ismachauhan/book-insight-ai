@@ -7,16 +7,25 @@ def call_llm(prompt):
     data = {
         "model": "mistral-7b-instruct-v0.2",
         "input": prompt,
-        "temperature": 0.7
+        "temperature": 0.5
     }
 
     try:
-        response = requests.post(url, json=data, timeout=30)
+        response = requests.post(url, json=data, timeout=120)
         result = response.json()
-        return result["output"][0]["content"][0]["text"].strip()
+
+        if "output" in result and len(result["output"]) > 0:
+            content = result["output"][0]["content"]
+
+            for item in content:
+                if item.get("type") == "output_text":
+                    return item.get("text", "").strip()
+
+        return "LLM Error: No valid text found"
 
     except Exception as e:
         return f"LLM Error: {str(e)}"
+ 
 
 
 def generate_summary(description):
@@ -53,13 +62,17 @@ Rules:
 
 def generate_answer(query, context):
     prompt = f"""
-You are an AI assistant for a book recommendation website.
+You are a helpful assistant for a book recommendation website.
 
-RULES:
-- Use the given context to recommend relevant books
-- You may infer meaning (for example, genre like "science fiction")
-- Do NOT suggest books outside the context
-- Keep the answer natural and helpful
+Your job:
+- Recommend books from the given context
+- Try your best to match the user's intent
+- Even if it's not exact, suggest the closest books
+
+Rules:
+- Do NOT say "I cannot recommend"
+- Always suggest 2 books from context
+- Keep it simple and friendly
 
 Format:
 
@@ -74,13 +87,12 @@ Why you might like it: ...
 Context:
 {context}
 
-Question:
+User query:
 {query}
 
 Answer:
 """
     return call_llm(prompt)
-
 
 def classify_genre(title, description):
     prompt = f"""
