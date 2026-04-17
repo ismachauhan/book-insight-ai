@@ -11,14 +11,12 @@ def call_llm(prompt):
     }
 
     try:
-        response = requests.post(url, json=data)
+        response = requests.post(url, json=data, timeout=30)
         result = response.json()
-
         return result["output"][0]["content"][0]["text"].strip()
 
     except Exception as e:
         return f"LLM Error: {str(e)}"
-
 
 
 def generate_summary(description):
@@ -33,9 +31,7 @@ Do not add extra information.
 Description:
 {description}
 """
-
     return call_llm(prompt)
-
 
 
 def recommend_book(title, description):
@@ -51,23 +47,21 @@ Rules:
 - Do NOT repeat the same book
 - Give only book suggestions with short reason
 - Keep answer short
-
 """
     return call_llm(prompt)
-
 
 
 def generate_answer(query, context):
     prompt = f"""
 You are an AI assistant for a book recommendation website.
 
-STRICT RULES:
-- Answer ONLY using the given context
+RULES:
+- Use the given context to recommend relevant books
+- You may infer meaning (for example, genre like "science fiction")
 - Do NOT suggest books outside the context
-- Keep the answer clean and readable
+- Keep the answer natural and helpful
 
-If recommending books:
-Format like:
+Format:
 
 Book 1:
 Title: ...
@@ -76,8 +70,6 @@ Why you might like it: ...
 Book 2:
 Title: ...
 Why you might like it: ...
-
-Keep spacing proper and avoid long paragraphs.
 
 Context:
 {context}

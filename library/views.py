@@ -3,10 +3,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BookData
 from .serializers import BookDataSerializer
-from .embedding_utils import find_top_books_semantic, build_faiss_index, search_books
+from .embedding_utils import build_faiss_index, search_books
 from .ai_utils import generate_answer
- 
-
 
 
 @api_view(['GET'])
@@ -47,14 +45,12 @@ def ask_question(request):
 
     books = BookData.objects.all()
 
-    
     build_faiss_index(books)
     top_books = search_books(query)
 
     if not top_books:
         return Response({"error": "No relevant books found"})
 
-    
     unique_books = []
     seen = set()
 
@@ -65,26 +61,23 @@ def ask_question(request):
 
     top_books = unique_books
 
-   
     query_lower = query.lower()
     top_books = [
         book for book in top_books
         if book.title.lower() not in query_lower
     ]
 
-  
     context = ""
     for book in top_books:
         context += f"""
+Book:
 Title: {book.title}
+Genre: {book.genre}
 Summary: {book.ai_summary}
 Description: {book.description}
 """
 
-    
     answer = generate_answer(query, context)
-
-    
     answer += "\n\nSources: " + ", ".join([book.title for book in top_books])
 
     sources = [book.title for book in top_books]
@@ -93,8 +86,6 @@ Description: {book.description}
         "answer": answer,
         "sources": sources
     })
-
-
 
 
 def dashboard(request):
@@ -122,8 +113,8 @@ def ask_page(request):
         else:
             books = BookData.objects.all()
 
-            
-            top_books = find_top_books_semantic(query, books)
+            build_faiss_index(books)
+            top_books = search_books(query)
 
             if top_books:
                 unique_books = []
@@ -152,11 +143,15 @@ def ask_page(request):
                     context = ""
                     for book in top_books:
                         context += f"""
+Book:
 Title: {book.title}
+Genre: {book.genre}
 Summary: {book.ai_summary}
+Description: {book.description}
 """
 
                     answer = generate_answer(query, context)
+                    answer += "\n\nSources: " + ", ".join([book.title for book in top_books])
 
                     sources = top_books
 
