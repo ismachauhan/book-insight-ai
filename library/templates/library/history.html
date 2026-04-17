@@ -2,63 +2,49 @@
 <html>
 <head>
     <title>History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f4f6f8;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 700px;
-            margin: auto;
-        }
-
-        .card {
-            background: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-
-        .question {
-            font-weight: bold;
-        }
-
-        .answer {
-            margin-top: 5px;
-            color: #444;
-        }
-
-        .back {
-            display: block;
-            margin-bottom: 20px;
-            text-decoration: none;
-            color: #4CAF50;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
 </head>
 
-<body>
+<body class="bg-gradient-to-br from-[#fdfbfb] to-[#ebedee]">
 
-<div class="container">
+<!-- HERO -->
+<div class="relative h-[200px] bg-[url('https://images.unsplash.com/photo-1512820790803-83ca734da794')] bg-cover bg-center">
 
-    <a href="/ask/" class="back">← Back to Q&A</a>
+    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+        <h1 class="text-3xl font-bold text-white font-[Playfair_Display]">
+            📜 Your History
+        </h1>
+    </div>
+</div>
 
-    <h2>📜 Your Search History</h2>
+<!-- CONTENT -->
+<div class="max-w-3xl mx-auto mt-10 px-6 pb-10">
 
     {% if history %}
         {% for item in history reversed %}
-            <div class="card">
-                <div class="question">Q: {{ item.question }}</div>
-                <div class="answer">A: {{ item.answer }}</div>
-            </div>
+        <div class="bg-white p-5 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300 mb-4">
+
+            <p class="font-semibold text-gray-800">
+                Q: {{ item.question }}
+            </p>
+
+            <p class="mt-2 text-gray-600">
+                A: {{ item.answer }}
+            </p>
+
+        </div>
         {% endfor %}
     {% else %}
-        <p>No history yet 😄</p>
+        <p class="text-gray-600">No history yet 😄</p>
     {% endif %}
+
+    <div class="mt-6">
+        <a href="/ask/" class="text-gray-600 hover:text-black transition">
+            ← Back to Ask Page
+        </a>
+    </div>
 
 </div>
 

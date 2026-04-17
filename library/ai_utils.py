@@ -59,15 +59,25 @@ Rules:
 
 def generate_answer(query, context):
     prompt = f"""
-You are an intelligent AI book assistant.
+You are an AI assistant for a book recommendation website.
 
-Instructions:
-- Answer clearly and naturally like a human
-- If the user asks for a summary → give a concise 2-3 line summary
-- If the user asks for recommendations → suggest 2-3 DIFFERENT books
-- Give a short reason for each recommendation
-- Do NOT repeat the same book
-- Do NOT say "based on system analysis"
+STRICT RULES:
+- Answer ONLY using the given context
+- Do NOT suggest books outside the context
+- Keep the answer clean and readable
+
+If recommending books:
+Format like:
+
+Book 1:
+Title: ...
+Why you might like it: ...
+
+Book 2:
+Title: ...
+Why you might like it: ...
+
+Keep spacing proper and avoid long paragraphs.
 
 Context:
 {context}
@@ -78,7 +88,6 @@ Question:
 Answer:
 """
     return call_llm(prompt)
-
 
 
 def classify_genre(title, description):

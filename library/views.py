@@ -3,7 +3,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import BookData
 from .serializers import BookDataSerializer
-from .rag_utils import find_top_books
+from .embedding_utils import find_top_books_semantic  # ✅ NEW
+from .ai_utils import generate_answer
 
 
 # ===================== API VIEWS =====================
@@ -33,11 +34,9 @@ def add_book(request):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
-    
+
     return Response(serializer.errors, status=400)
 
-
-from .ai_utils import generate_answer
 
 @api_view(['POST'])
 def ask_question(request):
@@ -47,7 +46,9 @@ def ask_question(request):
         return Response({"error": "Question is required"}, status=400)
 
     books = BookData.objects.all()
-    top_books = find_top_books(query, books)
+
+    # 🔥 STEP 2: semantic search
+    top_books = find_top_books_semantic(query, books)
 
     if not top_books:
         return Response({"error": "No relevant books found"})
@@ -62,10 +63,13 @@ def ask_question(request):
             seen.add(book.title)
 
     top_books = unique_books
+
+    # ✅ FILTER SELF MATCH
+    query_lower = query.lower()
     top_books = [
-    book for book in top_books
-    if book.title.lower() not in query.lower()
-]
+        book for book in top_books
+        if book.title.lower() not in query_lower
+    ]
 
     # ✅ BUILD CONTEXT
     context = ""
@@ -79,13 +83,18 @@ Description: {book.description}
     # 🔥 LLM ANSWER
     answer = generate_answer(query, context)
 
-    # ✅ SOURCES
+    # ✅ FORCE SOURCES (IMPORTANT)
+    answer += "\n\nSources: " + ", ".join([book.title for book in top_books])
+
     sources = [book.title for book in top_books]
 
     return Response({
         "answer": answer,
         "sources": sources
     })
+
+
+# ===================== UI VIEWS =====================
 
 def dashboard(request):
     books = BookData.objects.all().order_by('-uploaded_at')
@@ -97,25 +106,23 @@ def book_detail(request, pk):
     return render(request, "library/book_detail.html", {"book": book})
 
 
-from .ai_utils import generate_answer
-
 def ask_page(request):
     answer = None
     sources = None
 
-    # ✅ get existing history
     history = request.session.get("history", [])
 
     if request.method == "POST":
         query = request.POST.get("question", "").strip()
 
-        # ✅ handle empty input
         if not query:
             answer = "Hmm… try typing something first 😄"
             sources = []
         else:
             books = BookData.objects.all()
-            top_books = find_top_books(query, books)
+
+            # 🔥 STEP 2 HERE ALSO
+            top_books = find_top_books_semantic(query, books)
 
             if top_books:
                 unique_books = []
@@ -135,15 +142,12 @@ def ask_page(request):
                     if book.title.lower() not in query_lower
                 ]
 
-                # ✅ LIMIT
                 top_books = top_books[:3]
 
-                # ❗ check after filtering
                 if not top_books:
                     answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
                     sources = []
                 else:
-                    # ✅ simple context
                     context = ""
                     for book in top_books:
                         context += f"""
@@ -152,13 +156,14 @@ Summary: {book.ai_summary}
 """
 
                     answer = generate_answer(query, context)
+
                     sources = top_books
 
             else:
                 answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
                 sources = []
 
-        # 🔥 SAVE TO HISTORY
+        # 🔥 SAVE HISTORY
         history.append({
             "question": query,
             "answer": answer
@@ -171,65 +176,7 @@ Summary: {book.ai_summary}
         "sources": sources,
         "history": history
     })
-    answer = None
-    sources = None
 
-    if request.method == "POST":
-        query = request.POST.get("question", "").strip()
-
-        # ✅ handle empty input
-        if not query:
-            answer = "Hmm… try typing something first 😄"
-            sources = []
-        else:
-            books = BookData.objects.all()
-            top_books = find_top_books(query, books)
-
-            if top_books:
-                unique_books = []
-                seen = set()
-
-                for book in top_books:
-                    if book.title not in seen:
-                        unique_books.append(book)
-                        seen.add(book.title)
-
-                top_books = unique_books
-
-                query_lower = query.lower()
-
-                top_books = [
-                    book for book in top_books
-                    if book.title.lower() not in query_lower
-                ]
-
-                # ✅ LIMIT
-                top_books = top_books[:3]
-
-                # ❗ check after filtering
-                if not top_books:
-                    answer = "Looks like that book slipped off our shelf 📚😄 Try another search?"
-                    sources = []
-                else:
-                    # ✅ simple context (fast)
-                    context = ""
-                    for book in top_books:
-                        context += f"""
-Title: {book.title}
-Summary: {book.ai_summary}
-"""
-
-                    answer = generate_answer(query, context)
-                    sources = top_books
-
-            else:
-                answer = "Looks like that book slipped off our shelf 😄 Try another search?"
-                sources = []
-
-    return render(request, "library/ask.html", {
-        "answer": answer,
-        "sources": sources
-    })
 
 def history_page(request):
     history = request.session.get("history", [])
